@@ -33,9 +33,9 @@ import org.gradle.nativeplatform.fixtures.app.SourceElement
 import org.gradle.nativeplatform.fixtures.app.SwiftApp
 import org.gradle.nativeplatform.fixtures.app.SwiftLib
 import org.gradle.test.fixtures.file.TestFile
-import org.gradle.util.VersionNumber
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
+import org.gradle.util.internal.VersionNumber
 
 @RequiresInstalledToolChain(ToolChainRequirement.SWIFTC)
 // https://github.com/gradle/gradle-private/issues/3387

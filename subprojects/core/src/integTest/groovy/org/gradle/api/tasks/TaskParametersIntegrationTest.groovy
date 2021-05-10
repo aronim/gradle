@@ -54,7 +54,7 @@ class TaskParametersIntegrationTest extends AbstractIntegrationSpec implements V
         fails "foo"
         then:
         failure.assertHasDescription("Execution failed for task ':foo'.")
-        failure.assertHasCause("Unable to store input properties for task ':foo'. Property 'b' with value 'xxx' cannot be serialized.")
+        failure.assertHasCause("Input property 'b' with value 'xxx' cannot be serialized.")
     }
 
     def "deals gracefully with not serializable contents of GStrings"() {
@@ -719,7 +719,7 @@ task someTask(type: SomeTask) {
     }
 
     @ValidationTestFor(
-
+        ValidationProblemId.CANNOT_WRITE_OUTPUT
     )
     @Unroll
     def "wrong output file type registered via TaskOutputs.#method is not allowed (files)"() {
@@ -776,6 +776,36 @@ task someTask(type: SomeTask) {
         method  | path
         "dir"   | "output-file.txt"
         "dirs"  | "output-file.txt"
+    }
+
+    @ValidationTestFor(
+        ValidationProblemId.CANNOT_WRITE_OUTPUT
+    )
+    @Issue("https://github.com/gradle/gradle/issues/15679")
+    def "fileTrees with regular file roots cannot be used as output files"() {
+        expectReindentedValidationMessage()
+        buildScript """
+            task myTask {
+                inputs.file file('input.txt')
+                outputs.files(files('build/output.txt').asFileTree).withPropertyName('output')
+                doLast {
+                    file('build/output.txt').text = new File('input.txt').text
+                }
+            }
+        """.stripIndent()
+
+
+        def outputFile = file('build/output.txt')
+        outputFile.text = "pre-existing"
+        file('input.txt').text = 'input file'
+
+        expect:
+        fails('myTask')
+        failureDescriptionContains(cannotCreateRootOfFileTree {
+            type('org.gradle.api.DefaultTask').property('output')
+                .dir(outputFile)
+                .includeLink()
+        })
     }
 
     def "can specify null as an input property in ad-hoc task"() {
