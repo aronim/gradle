@@ -122,7 +122,10 @@ public class ScalaBasePlugin implements Plugin<Project> {
 
         Configuration zinc = project.getConfigurations().create(ZINC_CONFIGURATION_NAME);
         zinc.setVisible(false);
+        zinc.setCanBeConsumed(false);
+        zinc.setCanBeResolved(true);
         zinc.setDescription("The Zinc incremental compiler to be used for this Scala project.");
+        jvmEcosystemUtilities.configureAsRuntimeClasspath(zinc);
 
         zinc.getResolutionStrategy().eachDependency(rule -> {
             if (rule.getRequested().getGroup().equals("com.typesafe.zinc") && rule.getRequested().getName().equals("zinc")) {
@@ -190,13 +193,13 @@ public class ScalaBasePlugin implements Plugin<Project> {
                 incrementalAnalysis.extendsFrom(classpath);
                 incrementalAnalysis.getAttributes().attribute(USAGE_ATTRIBUTE, incrementalAnalysisUsage);
 
-                configureScalaCompile(project, sourceSet, incrementalAnalysis, incrementalAnalysisUsage);
+                configureScalaCompile(project, sourceSet, incrementalAnalysis);
             }
 
         });
     }
 
-    private static void configureScalaCompile(final Project project, final SourceSet sourceSet, final Configuration incrementalAnalysis, final Usage incrementalAnalysisUsage) {
+    private static void configureScalaCompile(final Project project, final SourceSet sourceSet, final Configuration incrementalAnalysis) {
         Convention scalaConvention = (Convention) InvokerHelper.getProperty(sourceSet, "convention");
         final ScalaSourceSet scalaSourceSet = scalaConvention.findPlugin(ScalaSourceSet.class);
 
@@ -258,19 +261,19 @@ public class ScalaBasePlugin implements Plugin<Project> {
             public void execute(final ScalaCompile compile) {
                 compile.getConventionMapping().map("scalaClasspath", new Callable<FileCollection>() {
                     @Override
-                    public FileCollection call() throws Exception {
+                    public FileCollection call() {
                         return scalaRuntime.inferScalaClasspath(compile.getClasspath());
                     }
                 });
                 compile.getConventionMapping().map("zincClasspath", new Callable<Configuration>() {
                     @Override
-                    public Configuration call() throws Exception {
+                    public Configuration call() {
                         return project.getConfigurations().getAt(ZINC_CONFIGURATION_NAME);
                     }
                 });
                 compile.getConventionMapping().map("scalaCompilerPlugins", new Callable<FileCollection>() {
                     @Override
-                    public FileCollection call() throws Exception {
+                    public FileCollection call() {
                         return project.getConfigurations().getAt(SCALA_COMPILER_PLUGINS_CONFIGURATION_NAME);
                     }
                 });
@@ -284,19 +287,19 @@ public class ScalaBasePlugin implements Plugin<Project> {
             public void execute(final ScalaDoc scalaDoc) {
                 scalaDoc.getConventionMapping().map("destinationDir", new Callable<File>() {
                     @Override
-                    public File call() throws Exception {
+                    public File call() {
                         return project.getExtensions().getByType(JavaPluginExtension.class).getDocsDir().dir("scaladoc").get().getAsFile();
                     }
                 });
                 scalaDoc.getConventionMapping().map("title", new Callable<String>() {
                     @Override
-                    public String call() throws Exception {
+                    public String call() {
                         return project.getExtensions().getByType(ReportingExtension.class).getApiDocTitle();
                     }
                 });
                 scalaDoc.getConventionMapping().map("scalaClasspath", new Callable<FileCollection>() {
                     @Override
-                    public FileCollection call() throws Exception {
+                    public FileCollection call() {
                         return scalaRuntime.inferScalaClasspath(scalaDoc.getClasspath());
                     }
                 });
